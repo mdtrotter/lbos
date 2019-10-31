@@ -21,6 +21,7 @@ void think(long tid)
 {
 
 	printf("philospher %d is thinking\n", tid);
+	sleep(1);
 
 }
 
@@ -28,11 +29,10 @@ void get_forks(long tid)
 {
 	pthread_mutex_lock(&mutex1);
 	sem_wait(&sems[tid]);
-	printf("philosopher %d has grabbed fork %d\n", tid, tid);
-	pthread_mutex_unlock(&mutex1);
-	sleep(1);
+	printf("philosopher %d has grabbed right fork %d\n", tid, tid);
 	sem_wait(&sems[(tid+1)%5]);
-	printf("philosopher %d has grabbed fork %d\n", tid, ((tid+1)%5));
+	printf("philosopher %d has grabbed left fork %d\n", tid, ((tid+1)%5));
+	pthread_mutex_unlock(&mutex1);
 
 }
 
@@ -40,6 +40,7 @@ void eat(long tid)
 {
 
 	printf("philosopher %d is eating\n", tid);
+	sleep(1);
 
 }
 
@@ -47,10 +48,10 @@ void put_forks(long tid)
 {
 
 	sem_post(&sems[tid]);
-	printf("philosopher %d has placed down fork %d\n", tid, tid);
+	printf("philosopher %d has placed down right fork %d\n", tid, tid);
 	sleep(1);
 	sem_post(&sems[(tid+1)%5]);
-	printf("philosopher %d has placed down fork %d\n", tid, ((tid+1)%5));
+	printf("philosopher %d has placed down left fork %d\n", tid, ((tid+1)%5));
 
 }
 
