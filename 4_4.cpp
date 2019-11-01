@@ -8,6 +8,7 @@
 
 #include <pthread.h>
 #include <semaphore.h>
+#include <iostream>
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
@@ -25,13 +26,17 @@ void think(long tid)
 
 }
 
-void get_forks(long tid)
+void put_forks(long tid)
 {
+
 	pthread_mutex_lock(&mutex1);
-	sem_wait(&sems[tid]);
-	printf("philosopher %d has grabbed right fork %d\n", tid, tid);
-	sem_wait(&sems[(tid+1)%5]);
-	printf("philosopher %d has grabbed left fork %d\n", tid, ((tid+1)%5));
+	std::cout << "philosopher " << tid << " has placed down right fork " << tid << std::endl;
+	sem_post(&sems[tid]);
+	pthread_mutex_unlock(&mutex1);
+
+	pthread_mutex_lock(&mutex1);
+	std::cout << "philosopher " << tid << " has placed down left fork " << (tid+1)%5 << std:: endl;
+	sem_post(&sems[(tid+1)%5]);
 	pthread_mutex_unlock(&mutex1);
 
 }
@@ -41,29 +46,54 @@ void eat(long tid)
 
 	printf("philosopher %d is eating\n", tid);
 	sleep(1);
+	put_forks(tid);
 
 }
 
-void put_forks(long tid)
+void get_forks(long tid)
+{
+	sem_wait(&sems[tid]);
+	std::cout << "philosopher " << tid << " has grabbed right fork " << tid << std::endl;
+	sem_wait(&sems[(tid+1)%5]);
+	std::cout << "philosopher " << tid << " has grabbed left fork " << ((tid+1)%5) << std::endl;
+	pthread_mutex_unlock(&mutex1);
+	eat(tid);
+
+}
+
+void check_forks(long tid)
 {
 
-	sem_post(&sems[tid]);
-	printf("philosopher %d has placed down right fork %d\n", tid, tid);
-	sleep(1);
-	sem_post(&sems[(tid+1)%5]);
-	printf("philosopher %d has placed down left fork %d\n", tid, ((tid+1)%5));
+	int valLeft, valRight;
+	pthread_mutex_lock(&mutex1);
+	sem_getvalue(&sems[tid], &valLeft);
+	sem_getvalue(&sems[((tid+1)%5)], &valRight);
+	if(valLeft == 1 && valRight == 1)
+	{
+	
+		get_forks(tid);
+	
+	}else{
+		if(valLeft == 0){
+			std::cout << "philosopher " << tid << " needs fork " << tid << std::endl;
+		}if(valRight == 0){
+			std::cout << "philosopher " << tid << " needs fork " << (tid+1)%5 << std::endl;
+		}
+		std::cout << "philosopher " << tid << " will go hungry"<< std::endl;
+		pthread_mutex_unlock(&mutex1);
+	
+	}
 
 }
 
 //main thread function
 void *philFunc(void *threadid)
 {
-
-	long tid = (long)threadid;
-	//think(tid);
-	get_forks(tid);
-	//eat(tid);
-	put_forks(tid);
+	for(int i=0; i<100; i++){
+		long tid = (long)threadid;
+		think(tid);
+		check_forks(tid);
+	}
 
 	pthread_exit(NULL);
 
